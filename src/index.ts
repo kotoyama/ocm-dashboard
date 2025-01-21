@@ -8,7 +8,9 @@ import {
 
 import env from '~/config'
 import { commands } from '~/commands'
+import { Violation } from '~/shared/types'
 import { deployCommands } from './deploy-commands'
+import { db } from './db'
 
 async function bootstrap() {
   const client = new Client({
@@ -16,6 +18,22 @@ async function bootstrap() {
   })
 
   client.once(Events.ClientReady, () => {
+    /** @see https://bun.sh/docs/api/sqlite#wal-mode */
+    db.exec('PRAGMA journal_mode = WAL;')
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS warns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        reason TEXT NOT NULL CHECK (
+          reason IN (${Object.values(Violation)
+            .map((value) => `'${value}'`)
+            .join(', ')})
+        ),
+        details TEXT CHECK (LENGTH(details) <= 280),
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `)
+
     console.log('Discord bot is ready! 🐐')
 
     client.user?.setPresence({

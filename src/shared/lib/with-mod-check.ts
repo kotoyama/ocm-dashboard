@@ -1,12 +1,7 @@
-import {
-  CommandInteraction,
-  EmbedBuilder,
-  GuildMember,
-  Message,
-} from 'discord.js'
+import { CommandInteraction, GuildMember, Message } from 'discord.js'
 
-import env from '~/config'
-import { colors } from '../ui'
+import { isMod } from './guards'
+import { notify } from './notify'
 
 export function withModCheck(
   handler: (
@@ -14,19 +9,12 @@ export function withModCheck(
   ) => Promise<void | Message<boolean>>,
 ) {
   return async (interaction: CommandInteraction) => {
-    const member = interaction.member as GuildMember
+    const initiator = interaction.member as GuildMember
 
-    if (
-      !member.roles.cache.some((role) =>
-        env.MODERATION_ROLES_IDS.includes(role.id),
-      )
-    ) {
-      return interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(colors.error)
-            .setDescription('❌ You are not allowed to use this bot.'),
-        ],
+    if (!isMod(initiator)) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Ты не можешь использовать эту команду.',
       })
     }
 

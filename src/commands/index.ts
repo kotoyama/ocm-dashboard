@@ -1,5 +1,5 @@
-import * as ping from './pong.command'
+import * as warn from './warn'
 
 export const commands = {
-  ping,
+  warn,
 }
