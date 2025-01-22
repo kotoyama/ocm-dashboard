@@ -58,77 +58,95 @@ async function handleWarn(interaction: CommandInteraction) {
     | undefined
     | null
 
-  const guildMember = interaction.guild?.members.cache.get(userId)
-  const initiator = interaction.member as GuildMember
+  try {
+    const guildMember = interaction.guild?.members.cache.get(userId)
+    const initiator = interaction.member as GuildMember
 
-  if (initiator.user.id === userId) {
-    return notify(interaction, {
-      type: 'error',
-      message: 'Ты не можешь выдать варн самому себе.',
-    })
-  }
+    if (initiator.user.id === userId) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Ты не можешь выдать варн самому себе.',
+      })
+    }
 
-  if (!isPlayer(guildMember)) {
-    return notify(interaction, {
-      type: 'error',
-      message: 'Ты не можешь выдать варн этому пользователю.',
-    })
-  }
+    if (!isPlayer(guildMember)) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Ты не можешь выдать варн этому пользователю.',
+      })
+    }
 
-  if (
-    !!guildMember?.communicationDisabledUntilTimestamp &&
-    guildMember?.communicationDisabledUntilTimestamp !== null
-  ) {
-    return notify(interaction, {
-      type: 'error',
-      message: `Пользователь ${guildMember?.user.username} уже в таймауте.`,
-    })
-  }
+    const isTimeouted =
+      !!guildMember?.communicationDisabledUntilTimestamp &&
+      guildMember.communicationDisabledUntilTimestamp !== null &&
+      guildMember.communicationDisabledUntilTimestamp >= Date.now()
 
-  db.query(
-    'INSERT INTO warns (user_id, reason, details) VALUES ($user_id, $reason, $details)',
-  ).run({
-    $user_id: userId,
-    $reason: violation,
-    $details: details || null,
-  })
+    if (isTimeouted) {
+      return notify(interaction, {
+        type: 'error',
+        message: `Пользователь ${guildMember?.user.username} уже в таймауте.`,
+      })
+    }
 
-  const [{ count: warnsCount }] = db
-    .query(
-      'SELECT COUNT(*) AS count FROM warns WHERE user_id = $user_id AND reason = $reason',
-    )
-    .all({
+    db.run('BEGIN TRANSACTION;')
+
+    db.query(
+      'INSERT INTO warns (user_id, reason, details) VALUES ($user_id, $reason, $details);',
+    ).run({
       $user_id: userId,
       $reason: violation,
-    }) as [{ count: number }]
+      $details: details || null,
+    })
 
-  const rules = sanctions[violation]
+    db.run('COMMIT;')
 
-  if (rules.length > 0) {
-    const rule = rules.find((rule) => rule.warns === warnsCount)
+    const [{ count: warnsCount }] = db
+      .query(
+        'SELECT COUNT(*) AS count FROM warns WHERE user_id = $user_id AND reason = $reason;',
+      )
+      .all({
+        $user_id: userId,
+        $reason: violation,
+      }) as [{ count: number }]
 
-    if (rule) {
-      guildMember?.timeout(rule.timeout)
+    const rules = sanctions[violation]
 
-      return notify(interaction, {
-        type: 'success',
-        message: `Пользователь ${guildMember?.user.username} был отправлен в таймаут на ${rule.label} за ${warnsCount}-е нарушение правила "${violationChoices[violation]}".`,
-      })
+    if (rules.length > 0) {
+      const rule = rules.find((rule) => rule.warns === warnsCount)
+
+      if (rule) {
+        guildMember?.timeout(rule.timeout)
+
+        return notify(interaction, {
+          type: 'success',
+          message: `Пользователь ${guildMember?.user.username} был отправлен в таймаут на ${rule.label} за ${warnsCount}-е нарушение правила "${violationChoices[violation]}".`,
+        })
+      } else {
+        return notify(interaction, {
+          type: 'info',
+          message: `У пользователя ${guildMember?.user.username} уже ${plural(warnsCount, ['варн', 'варна', 'варнов'])} за нарушение правила "${violationChoices[violation]}". Выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
+        })
+      }
     } else {
       return notify(interaction, {
         type: 'info',
-        message: `У пользователя ${guildMember?.user.username} уже ${plural(warnsCount, ['варн', 'варна', 'варнов'])} за нарушение правила "${violationChoices[violation]}". Выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
+        message:
+          'Варн успешно выдан, однако выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.',
       })
     }
-  } else {
+  } catch (error) {
+    console.error(error)
+
+    db.run('ROLLBACK;')
+
     return notify(interaction, {
-      type: 'info',
+      type: 'error',
       message:
-        'Варн успешно выдан, однако выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.',
+        'Произошла ошибка при обработке команды. Свяжитесь с автором бота.',
     })
   }
 }
 
-export const execute = withModCheck(
-  withDeferredResponse(handleWarn, { flags: [MessageFlags.Ephemeral] }),
-)
+export const execute = withDeferredResponse(withModCheck(handleWarn), {
+  flags: [MessageFlags.Ephemeral],
+})
