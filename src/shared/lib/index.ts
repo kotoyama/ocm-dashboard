@@ -1,5 +1,6 @@
 export * from './with-deferred-response'
 export * from './with-mod-check'
+export * from './truncate'
 export * from './guards'
 export * from './plural'
 export * from './notify'

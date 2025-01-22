@@ -22,7 +22,7 @@ async function bootstrap() {
     db.exec('PRAGMA journal_mode = WAL;')
     db.exec(`
       CREATE TABLE IF NOT EXISTS warns (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
         reason TEXT NOT NULL CHECK (
           reason IN (${Object.values(Violation)
@@ -47,7 +47,7 @@ async function bootstrap() {
   })
 
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isChatInputCommand()) {
+    if (!interaction.isCommand()) {
       return
     }
 

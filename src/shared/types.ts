@@ -23,3 +23,11 @@ export type SanctionLevel = {
 export type Sanctions = {
   [key in Violation]: SanctionLevel[]
 }
+
+export type Warn = {
+  id: string
+  userId: string
+  reason: Violation
+  details: string | null
+  timestamp: Date
+}

@@ -1,9 +1,5 @@
-import {
-  CommandInteraction,
-  SlashCommandBuilder,
-  MessageFlags,
-  GuildMember,
-} from 'discord.js'
+import { CommandInteraction, MessageFlags, GuildMember } from 'discord.js'
+import { nanoid } from 'nanoid'
 
 import { db } from '~/db'
 import {
@@ -13,41 +9,9 @@ import {
   withDeferredResponse,
   withModCheck,
 } from '~/shared/lib'
+import { violationChoices } from '~/shared/ui'
 import { Violation } from '~/shared/types'
 import sanctions from './sanctions'
-
-const violationChoices = {
-  [Violation.Respect]: 'Неуважение',
-  [Violation.ProhibitedTopics]: 'Запрещённые темы',
-  [Violation.InappropriateContent]: 'Неприемлемый контент',
-  [Violation.Privacy]: 'Нарушение конфиденциальности',
-  [Violation.Other]: 'Другое',
-}
-
-export const data = new SlashCommandBuilder()
-  .setName('warn')
-  .setDescription('Выдать варн пользователю')
-  .addUserOption((option) =>
-    option.setName('user_id').setDescription('Пользователь').setRequired(true),
-  )
-  .addStringOption((option) =>
-    option
-      .setName('violation')
-      .setDescription('Причина варна')
-      .setRequired(true)
-      .addChoices(
-        Object.entries(violationChoices).map(([value, name]) => ({
-          name,
-          value,
-        })),
-      ),
-  )
-  .addStringOption((option) =>
-    option
-      .setName('details')
-      .setDescription('Дополнительная информация')
-      .setMaxLength(280),
-  )
 
 async function handleWarn(interaction: CommandInteraction) {
   const userId = interaction.options.get('user_id', true).value as string
@@ -91,8 +55,9 @@ async function handleWarn(interaction: CommandInteraction) {
     db.run('BEGIN TRANSACTION;')
 
     db.query(
-      'INSERT INTO warns (user_id, reason, details) VALUES ($user_id, $reason, $details);',
+      'INSERT INTO warns (id, user_id, reason, details) VALUES ($id, $user_id, $reason, $details);',
     ).run({
+      $id: nanoid(10),
       $user_id: userId,
       $reason: violation,
       $details: details || null,
