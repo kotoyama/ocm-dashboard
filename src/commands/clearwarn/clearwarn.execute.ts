@@ -2,7 +2,12 @@ import { CommandInteraction, MessageFlags } from 'discord.js'
 
 import { db } from '~/db'
 import type { Warn } from '~/shared/types'
-import { notify, withDeferredResponse, withModCheck } from '~/shared/lib'
+import {
+  isMod,
+  notify,
+  withDeferredResponse,
+  withRoleCheck,
+} from '~/shared/lib'
 
 async function handleClearWarn(interaction: CommandInteraction) {
   const warnId = interaction.options.get('warn_id', true).value as string
@@ -55,6 +60,7 @@ async function handleClearWarn(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(withModCheck(handleClearWarn), {
-  flags: [MessageFlags.Ephemeral],
-})
+export const execute = withDeferredResponse(
+  withRoleCheck(handleClearWarn, isMod),
+  { flags: [MessageFlags.Ephemeral] },
+)

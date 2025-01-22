@@ -2,11 +2,12 @@ import { CommandInteraction, MessageFlags, EmbedBuilder } from 'discord.js'
 
 import { db } from '~/db'
 import {
+  isMod,
   isPlayer,
   notify,
   truncate,
   withDeferredResponse,
-  withModCheck,
+  withRoleCheck,
 } from '~/shared/lib'
 import type { Warn } from '~/shared/types'
 import { colors, violationChoices } from '~/shared/ui'
@@ -87,6 +88,7 @@ async function handleWarnsList(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(withModCheck(handleWarnsList), {
-  flags: [MessageFlags.Ephemeral],
-})
+export const execute = withDeferredResponse(
+  withRoleCheck(handleWarnsList, isMod),
+  { flags: [MessageFlags.Ephemeral] },
+)

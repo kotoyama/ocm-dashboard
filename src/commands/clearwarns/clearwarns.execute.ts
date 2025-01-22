@@ -1,7 +1,12 @@
 import { CommandInteraction, MessageFlags } from 'discord.js'
 
 import { db } from '~/db'
-import { notify, withBotAuthorCheck, withDeferredResponse } from '~/shared/lib'
+import {
+  isBotAuthor,
+  notify,
+  withDeferredResponse,
+  withRoleCheck,
+} from '~/shared/lib'
 
 async function handleClearWarns(interaction: CommandInteraction) {
   try {
@@ -30,8 +35,6 @@ async function handleClearWarns(interaction: CommandInteraction) {
 }
 
 export const execute = withDeferredResponse(
-  withBotAuthorCheck(handleClearWarns),
-  {
-    flags: [MessageFlags.Ephemeral],
-  },
+  withRoleCheck(handleClearWarns, isBotAuthor),
+  { flags: [MessageFlags.Ephemeral] },
 )

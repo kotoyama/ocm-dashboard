@@ -1,6 +1,5 @@
 export * from './with-deferred-response'
-export * from './with-bot-author-check'
-export * from './with-mod-check'
+export * from './with-role-check'
 export * from './truncate'
 export * from './guards'
 export * from './plural'

@@ -3,11 +3,12 @@ import { nanoid } from 'nanoid'
 
 import { db } from '~/db'
 import {
+  isMod,
   isPlayer,
   notify,
   plural,
   withDeferredResponse,
-  withModCheck,
+  withRoleCheck,
 } from '~/shared/lib'
 import { violationChoices } from '~/shared/ui'
 import { Violation } from '~/shared/types'
@@ -112,6 +113,6 @@ async function handleWarn(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(withModCheck(handleWarn), {
+export const execute = withDeferredResponse(withRoleCheck(handleWarn, isMod), {
   flags: [MessageFlags.Ephemeral],
 })
