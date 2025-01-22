@@ -21,6 +21,7 @@ const variables = {
     .nonempty()
     .transform((value) => value.split(','))
     .pipe(z.string().trim().array()),
+  BOT_AUTHOR_ROLE_ID: z.string().nonempty(),
 }
 
 const schema = z.object(variables)

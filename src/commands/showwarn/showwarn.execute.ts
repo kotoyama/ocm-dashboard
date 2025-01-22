@@ -16,7 +16,7 @@ async function handleShowWarn(interaction: CommandInteraction) {
     if (!result) {
       return notify(interaction, {
         type: 'error',
-        message: 'Запись не найдена.',
+        message: 'Варн не найден.',
       })
     }
 
