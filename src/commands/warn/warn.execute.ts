@@ -23,7 +23,7 @@ async function handleWarn(interaction: CommandInteraction) {
     | null
 
   try {
-    const guildMember = interaction.guild?.members.cache.get(userId)
+    const guildMember = await interaction.guild?.members.fetch(userId)
     const initiator = interaction.member as GuildMember
 
     if (initiator.user.id === userId) {

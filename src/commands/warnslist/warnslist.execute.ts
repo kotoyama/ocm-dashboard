@@ -16,7 +16,7 @@ async function handleListWarns(interaction: CommandInteraction) {
   const page = (interaction.options.get('page')?.value as number) || 1
 
   try {
-    const guildMember = interaction.guild?.members.cache.get(userId)
+    const guildMember = await interaction.guild?.members.fetch(userId)
 
     if (!isPlayer(guildMember)) {
       return notify(interaction, {
@@ -48,7 +48,7 @@ async function handleListWarns(interaction: CommandInteraction) {
 
     const warns = db
       .query(
-        'SELECT * FROM warns WHERE user_id = $user_id ORDER BY timestamp DESC LIMIT $limit OFFSET $offset',
+        'SELECT * FROM warns WHERE user_id = $user_id ORDER BY timestamp DESC LIMIT $limit OFFSET $offset;',
       )
       .all({
         $user_id: userId,
@@ -64,11 +64,11 @@ async function handleListWarns(interaction: CommandInteraction) {
           .setDescription(
             [
               '```',
-              '| ID         | Причина    | Детали     | Дата       |',
-              '| ---------- | ---------- | ---------- | ---------- |',
+              '| ID         | Причина        | Дата                  |',
+              '| ---------- | -------------- | --------------------- |',
               ...warns.map((row) => {
                 const warn = row as Warn
-                return `| ${warn.id.toString().padEnd(10)} | ${truncate(violationChoices[warn.reason], 10)} | ${truncate(warn.details || '', 10)} | ${new Date(warn.timestamp).toLocaleDateString().padEnd(10)} |`
+                return `| ${warn.id} | ${truncate(violationChoices[warn.reason], 14)} | ${new Date(warn.timestamp).toLocaleString()} |`
               }),
               '```',
             ].join('\n'),

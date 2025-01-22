@@ -26,7 +26,7 @@ export type Sanctions = {
 
 export type Warn = {
   id: string
-  userId: string
+  user_id: string
   reason: Violation
   details: string | null
   timestamp: Date
