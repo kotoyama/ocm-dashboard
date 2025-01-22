@@ -1,38 +1,39 @@
-import { CommandInteraction, MessageFlags, EmbedBuilder } from 'discord.js'
+import {
+  CommandInteraction,
+  MessageFlags,
+  EmbedBuilder,
+  GuildMember,
+} from 'discord.js'
 
 import { db } from '~/db'
-import {
-  isPlayer,
-  notify,
-  truncate,
-  withDeferredResponse,
-  withModCheck,
-} from '~/shared/lib'
+import { isPlayer, notify, truncate, withDeferredResponse } from '~/shared/lib'
 import type { Warn } from '~/shared/types'
 import { colors, violationChoices } from '~/shared/ui'
 
-async function handleWarnsList(interaction: CommandInteraction) {
-  const userId = interaction.options.get('user_id', true).value as string
+async function handleMyWarns(interaction: CommandInteraction) {
   const page = (interaction.options.get('page')?.value as number) || 1
 
   try {
-    const guildMember = await interaction.guild?.members.fetch(userId)
+    const initiator = interaction.member as GuildMember
+    const guildMember = await interaction.guild?.members.fetch(
+      initiator.user.id,
+    )
 
     if (!isPlayer(guildMember)) {
       return notify(interaction, {
         type: 'error',
-        message: 'У этого пользователя не может быть варнов.',
+        message: 'У тебя не может быть варнов.',
       })
     }
 
     const [{ count: totalWarns }] = db
       .query('SELECT COUNT(*) AS count FROM warns WHERE user_id = $user_id;')
-      .all({ $user_id: userId }) as [{ count: number }]
+      .all({ $user_id: initiator.user.id }) as [{ count: number }]
 
     if (!totalWarns) {
       return notify(interaction, {
         type: 'info',
-        message: `У пользователя ${guildMember?.user.username} нет варнов.`,
+        message: 'У тебя нет варнов.',
       })
     }
 
@@ -51,7 +52,7 @@ async function handleWarnsList(interaction: CommandInteraction) {
         'SELECT * FROM warns WHERE user_id = $user_id ORDER BY timestamp DESC LIMIT $limit OFFSET $offset;',
       )
       .all({
-        $user_id: userId,
+        $user_id: initiator.user.id,
         $limit: ITEMS_PER_PAGE,
         $offset: (page - 1) * ITEMS_PER_PAGE,
       })
@@ -60,7 +61,7 @@ async function handleWarnsList(interaction: CommandInteraction) {
       embeds: [
         new EmbedBuilder()
           .setColor(colors.info)
-          .setTitle(`Список варнов пользователя ${guildMember?.user.username}`)
+          .setTitle('Список твоих варнов')
           .setDescription(
             [
               '```',
@@ -87,6 +88,6 @@ async function handleWarnsList(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(withModCheck(handleWarnsList), {
+export const execute = withDeferredResponse(handleMyWarns, {
   flags: [MessageFlags.Ephemeral],
 })
