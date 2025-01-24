@@ -12,7 +12,7 @@ function hasRoles({ user, roles }: HasRolesConfig) {
 }
 
 export function isBotAuthor(user?: GuildMember) {
-  return hasRoles({ user, roles: [env.BOT_AUTHOR_ROLE_ID] })
+  return user?.id === env.BOT_AUTHOR_ID
 }
 
 export function isMod(user?: GuildMember) {

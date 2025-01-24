@@ -175,6 +175,6 @@ dist
 .DS_Store
 
 # DB files
-database.sqlite
-database.sqlite-shm
-database.sqlite-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

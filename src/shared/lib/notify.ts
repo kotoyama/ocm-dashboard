@@ -1,15 +1,15 @@
 import { EmbedBuilder, type CommandInteraction } from 'discord.js'
 
-import { colors } from '../ui'
+import config from '~/config/variables'
 
-type NotifyConfig = { type: keyof typeof colors; message: string }
+type NotifyParams = { type: keyof typeof config.colors; message: string }
 
-export function notify(interaction: CommandInteraction, config: NotifyConfig) {
+export function notify(interaction: CommandInteraction, params: NotifyParams) {
   return interaction.editReply({
     embeds: [
       new EmbedBuilder()
-        .setColor(colors[config.type])
-        .setDescription(config.message),
+        .setColor(config.colors[params.type])
+        .setDescription(params.message),
     ],
   })
 }

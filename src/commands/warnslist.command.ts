@@ -1,7 +1,14 @@
-import { CommandInteraction, MessageFlags, EmbedBuilder } from 'discord.js'
+import {
+  CommandInteraction,
+  MessageFlags,
+  EmbedBuilder,
+  SlashCommandBuilder,
+} from 'discord.js'
 
 import { db } from '~/db'
+import config from '~/config/variables'
 import {
+  formatDate,
   isMod,
   isPlayer,
   notify,
@@ -10,7 +17,16 @@ import {
   withRoleCheck,
 } from '~/shared/lib'
 import type { Warn } from '~/shared/types'
-import { colors, violationChoices } from '~/shared/ui'
+
+const data = new SlashCommandBuilder()
+  .setName('warnslist')
+  .setDescription('Показать варны')
+  .addUserOption((option) =>
+    option.setName('user_id').setDescription('Пользователь').setRequired(true),
+  )
+  .addIntegerOption((option) =>
+    option.setName('page').setDescription('Страница').setMinValue(1),
+  )
 
 async function handleWarnsList(interaction: CommandInteraction) {
   const userId = interaction.options.get('user_id', true).value as string
@@ -33,7 +49,7 @@ async function handleWarnsList(interaction: CommandInteraction) {
     if (!totalWarns) {
       return notify(interaction, {
         type: 'info',
-        message: `У пользователя ${guildMember?.user.username} нет варнов.`,
+        message: `У <@${guildMember?.user.id}> нет варнов.`,
       })
     }
 
@@ -60,16 +76,16 @@ async function handleWarnsList(interaction: CommandInteraction) {
     return interaction.editReply({
       embeds: [
         new EmbedBuilder()
-          .setColor(colors.info)
-          .setTitle(`Список варнов пользователя ${guildMember?.user.username}`)
+          .setColor(config.colors.info)
+          .setTitle(`Список варнов **${guildMember?.user.username}**`)
           .setDescription(
             [
               '```',
-              '| ID         | Причина        | Дата                  |',
-              '| ---------- | -------------- | --------------------- |',
+              '| ID         | Причина        | Дата              |',
+              '| ---------- | -------------- | ----------------- |',
               ...warns.map((row) => {
                 const warn = row as Warn
-                return `| ${warn.id} | ${truncate(violationChoices[warn.reason], 14)} | ${new Date(warn.timestamp).toLocaleString()} |`
+                return `| ${warn.id} | ${truncate(config.violations[warn.reason], 14)} | ${formatDate(warn.timestamp)} |`
               }),
               '```',
             ].join('\n'),
@@ -88,7 +104,8 @@ async function handleWarnsList(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(
-  withRoleCheck(handleWarnsList, isMod),
-  { flags: [MessageFlags.Ephemeral] },
-)
+const execute = withDeferredResponse(withRoleCheck(handleWarnsList, isMod), {
+  flags: [MessageFlags.Ephemeral],
+})
+
+export default { data, execute }

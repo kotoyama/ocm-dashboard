@@ -1,63 +1,35 @@
-import {
-  ActivityType,
-  Client,
-  Events,
-  GatewayIntentBits,
-  PresenceUpdateStatus,
-} from 'discord.js'
+import { Glob } from 'bun'
+import path from 'node:path'
+import { Client, Collection, GatewayIntentBits } from 'discord.js'
 
 import env from '~/config'
-import { commands } from '~/commands'
-import { Violation } from '~/shared/types'
-import { deployCommands } from './deploy-commands'
-import { db } from './db'
+import { loadCommands } from '~/shared/lib'
 
 async function bootstrap() {
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   })
 
-  client.once(Events.ClientReady, () => {
-    /** @see https://bun.sh/docs/api/sqlite#wal-mode */
-    db.exec('PRAGMA journal_mode = WAL;')
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS warns (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        reason TEXT NOT NULL CHECK (
-          reason IN (${Object.values(Violation)
-            .map((value) => `'${value}'`)
-            .join(', ')})
-        ),
-        details TEXT CHECK (LENGTH(details) <= 280),
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
-      );
-    `)
+  client.commands = new Collection()
 
-    console.log('Discord bot is ready! 🐐')
+  const commands = await loadCommands()
 
-    client.user?.setPresence({
-      activities: [{ name: 'everyone', type: ActivityType.Watching }],
-      status: PresenceUpdateStatus.Online,
-    })
-  })
+  for (const [commandName, command] of commands) {
+    client.commands.set(commandName, command)
+  }
 
-  client.on(Events.GuildCreate, async (guild) => {
-    await deployCommands({ guildId: guild.id })
-  })
+  const eventsGlob = new Glob('src/events/**/*.event.ts')
 
-  client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isCommand()) {
-      return
+  for await (const file of eventsGlob.scan('.')) {
+    const filePath = path.resolve(process.cwd(), file)
+    const event = await import(filePath).then((m) => m.default)
+
+    if (event.once) {
+      client.once(event.name, (...args) => event.execute(...args))
+    } else {
+      client.on(event.name, (...args) => event.execute(...args))
     }
-
-    const { commandName } = interaction
-    const command = commands[commandName as keyof typeof commands]
-
-    if (command) {
-      command.execute(interaction)
-    }
-  })
+  }
 
   client.login(env.DISCORD_TOKEN)
 }

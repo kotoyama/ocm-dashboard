@@ -3,12 +3,26 @@ import {
   MessageFlags,
   EmbedBuilder,
   GuildMember,
+  SlashCommandBuilder,
 } from 'discord.js'
 
 import { db } from '~/db'
-import { isPlayer, notify, truncate, withDeferredResponse } from '~/shared/lib'
+import config from '~/config/variables'
+import {
+  formatDate,
+  isPlayer,
+  notify,
+  truncate,
+  withDeferredResponse,
+} from '~/shared/lib'
 import type { Warn } from '~/shared/types'
-import { colors, violationChoices } from '~/shared/ui'
+
+const data = new SlashCommandBuilder()
+  .setName('mywarns')
+  .setDescription('Показать мои варны')
+  .addIntegerOption((option) =>
+    option.setName('page').setDescription('Страница').setMinValue(1),
+  )
 
 async function handleMyWarns(interaction: CommandInteraction) {
   const page = (interaction.options.get('page')?.value as number) || 1
@@ -60,16 +74,16 @@ async function handleMyWarns(interaction: CommandInteraction) {
     return interaction.editReply({
       embeds: [
         new EmbedBuilder()
-          .setColor(colors.info)
+          .setColor(config.colors.info)
           .setTitle('Список твоих варнов')
           .setDescription(
             [
               '```',
-              '| ID         | Причина        | Дата                  |',
-              '| ---------- | -------------- | --------------------- |',
+              '| ID         | Причина        | Дата              |',
+              '| ---------- | -------------- | ----------------- |',
               ...warns.map((row) => {
                 const warn = row as Warn
-                return `| ${warn.id} | ${truncate(violationChoices[warn.reason], 14)} | ${new Date(warn.timestamp).toLocaleString()} |`
+                return `| ${warn.id} | ${truncate(config.violations[warn.reason], 14)} | ${formatDate(warn.timestamp)} |`
               }),
               '```',
             ].join('\n'),
@@ -88,6 +102,8 @@ async function handleMyWarns(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(handleMyWarns, {
+const execute = withDeferredResponse(handleMyWarns, {
   flags: [MessageFlags.Ephemeral],
 })
+
+export default { data, execute }

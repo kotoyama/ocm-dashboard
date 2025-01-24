@@ -1,18 +1,48 @@
-import { CommandInteraction, MessageFlags, GuildMember } from 'discord.js'
+import {
+  CommandInteraction,
+  MessageFlags,
+  GuildMember,
+  SlashCommandBuilder,
+} from 'discord.js'
 import { nanoid } from 'nanoid'
 
 import { db } from '~/db'
+import config from '~/config/variables'
 import {
   isMod,
   isPlayer,
+  logAction,
   notify,
   plural,
   withDeferredResponse,
   withRoleCheck,
 } from '~/shared/lib'
-import { violationChoices } from '~/shared/ui'
 import { Violation } from '~/shared/types'
-import sanctions from './sanctions'
+
+const data = new SlashCommandBuilder()
+  .setName('warn')
+  .setDescription('Выдать варн')
+  .addUserOption((option) =>
+    option.setName('user_id').setDescription('Пользователь').setRequired(true),
+  )
+  .addStringOption((option) =>
+    option
+      .setName('violation')
+      .setDescription('Причина варна')
+      .setRequired(true)
+      .addChoices(
+        Object.entries(config.violations).map(([value, name]) => ({
+          name,
+          value,
+        })),
+      ),
+  )
+  .addStringOption((option) =>
+    option
+      .setName('details')
+      .setDescription('Дополнительная информация')
+      .setMaxLength(280),
+  )
 
 async function handleWarn(interaction: CommandInteraction) {
   const userId = interaction.options.get('user_id', true).value as string
@@ -49,22 +79,33 @@ async function handleWarn(interaction: CommandInteraction) {
     if (isTimeouted) {
       return notify(interaction, {
         type: 'error',
-        message: `Пользователь ${guildMember?.user.username} уже в таймауте.`,
+        message: `<@${guildMember?.user.id}> уже в таймауте.`,
       })
     }
 
     db.run('BEGIN TRANSACTION;')
 
+    const warnId = nanoid(10)
+
     db.query(
       'INSERT INTO warns (id, user_id, reason, details) VALUES ($id, $user_id, $reason, $details);',
     ).run({
-      $id: nanoid(10),
+      $id: warnId,
       $user_id: userId,
       $reason: violation,
       $details: details || null,
     })
 
     db.run('COMMIT;')
+
+    await logAction(interaction.client, {
+      channel: 'modlog',
+      action: 'warn',
+      user_id: userId,
+      moderator_id: initiator.user.id,
+      warn_id: warnId,
+      violation,
+    })
 
     const [{ count: warnsCount }] = db
       .query(
@@ -75,7 +116,7 @@ async function handleWarn(interaction: CommandInteraction) {
         $reason: violation,
       }) as [{ count: number }]
 
-    const rules = sanctions[violation]
+    const rules = config.sactions[violation]
 
     if (rules.length > 0) {
       const rule = rules.find((rule) => rule.warns === warnsCount)
@@ -85,19 +126,18 @@ async function handleWarn(interaction: CommandInteraction) {
 
         return notify(interaction, {
           type: 'success',
-          message: `Пользователь ${guildMember?.user.username} был отправлен в таймаут на ${rule.label} за ${warnsCount}-е нарушение правила "${violationChoices[violation]}".`,
+          message: `<@${guildMember?.user.id}> получил варн и был отправлен в таймаут на **${rule.label}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
         })
       } else {
         return notify(interaction, {
           type: 'info',
-          message: `У пользователя ${guildMember?.user.username} уже ${plural(warnsCount, ['варн', 'варна', 'варнов'])} за нарушение правила "${violationChoices[violation]}". Выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
+          message: `У <@${guildMember?.user.id}> уже **${plural(warnsCount, ['варн', 'варна', 'варнов'])}** за нарушение правила **"${config.violations[violation]}"**. Выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
         })
       }
     } else {
       return notify(interaction, {
         type: 'info',
-        message:
-          'Варн успешно выдан, однако выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.',
+        message: `Варн для <@${guildMember?.user.id}> успешно выдан, однако выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
       })
     }
   } catch (error) {
@@ -113,6 +153,8 @@ async function handleWarn(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(withRoleCheck(handleWarn, isMod), {
+const execute = withDeferredResponse(withRoleCheck(handleWarn, isMod), {
   flags: [MessageFlags.Ephemeral],
 })
+
+export default { data, execute }

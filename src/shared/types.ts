@@ -14,20 +14,10 @@ export enum Violation {
   Other = 'other',
 }
 
-export type SanctionLevel = {
-  warns: number
-  timeout: number
-  label: string
-}
-
-export type Sanctions = {
-  [key in Violation]: SanctionLevel[]
-}
-
 export type Warn = {
   id: string
   user_id: string
   reason: Violation
   details: string | null
-  timestamp: Date
+  timestamp: number
 }

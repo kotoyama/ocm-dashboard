@@ -1,3 +1,5 @@
 import { Database } from 'bun:sqlite'
 
-export const db = new Database('./database.sqlite', { create: true })
+import env from '~/config'
+
+export const db = new Database(`./${env.NODE_ENV}.sqlite`, { create: true })

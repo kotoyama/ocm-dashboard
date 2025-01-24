@@ -1,13 +1,40 @@
-import { CommandInteraction, MessageFlags } from 'discord.js'
+import {
+  CommandInteraction,
+  GuildMember,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js'
 
 import { db } from '~/db'
 import type { Warn } from '~/shared/types'
 import {
   isMod,
+  logAction,
   notify,
   withDeferredResponse,
   withRoleCheck,
 } from '~/shared/lib'
+
+const data = new SlashCommandBuilder()
+  .setName('clearwarn')
+  .setDescription('Убрать варн')
+  .addStringOption((option) =>
+    option.setName('warn_id').setDescription('ID варна').setRequired(true),
+  )
+  .addStringOption((option) =>
+    option
+      .setName('reason')
+      .setDescription('Причина')
+      .setMaxLength(280)
+      .setRequired(true),
+  )
+  .addBooleanOption((option) =>
+    option
+      .setName('remove_timeout')
+      .setDescription(
+        'Надо ли снять с пользователя текущий таймаут, если имеется',
+      ),
+  )
 
 async function handleClearWarn(interaction: CommandInteraction) {
   const warnId = interaction.options.get('warn_id', true).value as string
@@ -28,6 +55,7 @@ async function handleClearWarn(interaction: CommandInteraction) {
     }
 
     const warn = result as Warn
+    const initiator = interaction.member as GuildMember
     const guildMember = await interaction.guild?.members.fetch(warn.user_id)
 
     const { changes } = db
@@ -45,9 +73,18 @@ async function handleClearWarn(interaction: CommandInteraction) {
       guildMember?.timeout(null)
     }
 
+    await logAction(interaction.client, {
+      channel: 'modlog',
+      action: 'clear-warn',
+      user_id: warn.user_id,
+      moderator_id: initiator.user.id,
+      warn_id: warnId,
+      reason,
+    })
+
     return notify(interaction, {
       type: 'success',
-      message: `Варн ${warnId} был успешно убран.`,
+      message: `Варн **${warnId}** был успешно убран.`,
     })
   } catch (error) {
     console.error(error)
@@ -60,7 +97,8 @@ async function handleClearWarn(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(
-  withRoleCheck(handleClearWarn, isMod),
-  { flags: [MessageFlags.Ephemeral] },
-)
+const execute = withDeferredResponse(withRoleCheck(handleClearWarn, isMod), {
+  flags: [MessageFlags.Ephemeral],
+})
+
+export default { data, execute }

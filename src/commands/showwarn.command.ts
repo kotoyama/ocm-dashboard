@@ -1,9 +1,21 @@
-import { CommandInteraction, MessageFlags, EmbedBuilder } from 'discord.js'
+import {
+  CommandInteraction,
+  MessageFlags,
+  EmbedBuilder,
+  SlashCommandBuilder,
+} from 'discord.js'
 
 import { db } from '~/db'
-import { notify, withDeferredResponse } from '~/shared/lib'
+import config from '~/config/variables'
+import { formatDate, notify, withDeferredResponse } from '~/shared/lib'
 import type { Warn } from '~/shared/types'
-import { colors, violationChoices } from '~/shared/ui'
+
+const data = new SlashCommandBuilder()
+  .setName('showwarn')
+  .setDescription('Посмотреть варн')
+  .addStringOption((option) =>
+    option.setName('warn_id').setDescription('ID варна').setRequired(true),
+  )
 
 async function handleShowWarn(interaction: CommandInteraction) {
   const warnId = interaction.options.get('warn_id', true).value as string
@@ -26,7 +38,7 @@ async function handleShowWarn(interaction: CommandInteraction) {
     return interaction.editReply({
       embeds: [
         new EmbedBuilder()
-          .setColor(colors.info)
+          .setColor(config.colors.info)
           .setTitle(guildMember?.user.username || null)
           .setDescription(warn.details)
           .setThumbnail(guildMember?.user.avatarURL() || null)
@@ -38,12 +50,12 @@ async function handleShowWarn(interaction: CommandInteraction) {
             },
             {
               name: 'Причина',
-              value: violationChoices[warn.reason],
+              value: config.violations[warn.reason],
               inline: true,
             },
             {
               name: 'Дата',
-              value: new Date(warn.timestamp).toLocaleString(),
+              value: formatDate(warn.timestamp),
               inline: true,
             },
           ),
@@ -60,6 +72,8 @@ async function handleShowWarn(interaction: CommandInteraction) {
   }
 }
 
-export const execute = withDeferredResponse(handleShowWarn, {
+const execute = withDeferredResponse(handleShowWarn, {
   flags: [MessageFlags.Ephemeral],
 })
+
+export default { data, execute }
