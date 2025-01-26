@@ -7,17 +7,25 @@ import { loadCommands } from '~/shared/lib'
 
 async function bootstrap() {
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildModeration,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
   })
 
   client.commands = new Collection()
 
+  // loading commands
   const commands = await loadCommands()
 
   for (const [commandName, command] of commands) {
     client.commands.set(commandName, command)
   }
 
+  // loading events
   const eventsGlob = new Glob('src/events/**/*.event.ts')
 
   for await (const file of eventsGlob.scan('.')) {

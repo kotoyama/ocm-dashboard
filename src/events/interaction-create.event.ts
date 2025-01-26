@@ -8,10 +8,9 @@ export default {
     const command = interaction.client.commands.get(interaction.commandName)
 
     if (!command) {
-      console.error(
+      throw new Error(
         `❌ No command matching ${interaction.commandName} was found`,
       )
-      return
     }
 
     await command.execute(interaction)

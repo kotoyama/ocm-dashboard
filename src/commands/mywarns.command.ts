@@ -8,9 +8,9 @@ import {
 
 import { db } from '~/db'
 import config from '~/config/variables'
+import { isPlayer } from '~/middlewares'
 import {
   formatDate,
-  isPlayer,
   notify,
   truncate,
   withDeferredResponse,

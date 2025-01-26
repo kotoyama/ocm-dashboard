@@ -6,13 +6,8 @@ import {
 } from 'discord.js'
 
 import { db } from '~/db'
-import {
-  isBotAuthor,
-  logAction,
-  notify,
-  withDeferredResponse,
-  withRoleCheck,
-} from '~/shared/lib'
+import { isBotAuthor, withPrivilegeCheck } from '~/middlewares'
+import { logAction, notify, withDeferredResponse } from '~/shared/lib'
 
 const data = new SlashCommandBuilder()
   .setName('clearwarns')
@@ -53,7 +48,7 @@ async function handleClearWarns(interaction: CommandInteraction) {
 }
 
 const execute = withDeferredResponse(
-  withRoleCheck(handleClearWarns, isBotAuthor),
+  withPrivilegeCheck(handleClearWarns, isBotAuthor),
   { flags: [MessageFlags.Ephemeral] },
 )
 

@@ -7,13 +7,8 @@ import {
 
 import { db } from '~/db'
 import type { Warn } from '~/shared/types'
-import {
-  isMod,
-  logAction,
-  notify,
-  withDeferredResponse,
-  withRoleCheck,
-} from '~/shared/lib'
+import { isMod, withPrivilegeCheck } from '~/middlewares'
+import { logAction, notify, withDeferredResponse } from '~/shared/lib'
 
 const data = new SlashCommandBuilder()
   .setName('clearwarn')
@@ -97,8 +92,11 @@ async function handleClearWarn(interaction: CommandInteraction) {
   }
 }
 
-const execute = withDeferredResponse(withRoleCheck(handleClearWarn, isMod), {
-  flags: [MessageFlags.Ephemeral],
-})
+const execute = withDeferredResponse(
+  withPrivilegeCheck(handleClearWarn, isMod),
+  {
+    flags: [MessageFlags.Ephemeral],
+  },
+)
 
 export default { data, execute }

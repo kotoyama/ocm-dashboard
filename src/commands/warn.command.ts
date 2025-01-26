@@ -8,15 +8,8 @@ import { nanoid } from 'nanoid'
 
 import { db } from '~/db'
 import config from '~/config/variables'
-import {
-  isMod,
-  isPlayer,
-  logAction,
-  notify,
-  plural,
-  withDeferredResponse,
-  withRoleCheck,
-} from '~/shared/lib'
+import { isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
+import { logAction, notify, plural, withDeferredResponse } from '~/shared/lib'
 import { Violation } from '~/shared/types'
 
 const data = new SlashCommandBuilder()
@@ -153,7 +146,7 @@ async function handleWarn(interaction: CommandInteraction) {
   }
 }
 
-const execute = withDeferredResponse(withRoleCheck(handleWarn, isMod), {
+const execute = withDeferredResponse(withPrivilegeCheck(handleWarn, isMod), {
   flags: [MessageFlags.Ephemeral],
 })
 

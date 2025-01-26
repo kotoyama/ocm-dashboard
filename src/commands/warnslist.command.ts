@@ -7,14 +7,12 @@ import {
 
 import { db } from '~/db'
 import config from '~/config/variables'
+import { isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
 import {
-  formatDate,
-  isMod,
-  isPlayer,
   notify,
   truncate,
+  formatDate,
   withDeferredResponse,
-  withRoleCheck,
 } from '~/shared/lib'
 import type { Warn } from '~/shared/types'
 
@@ -104,8 +102,11 @@ async function handleWarnsList(interaction: CommandInteraction) {
   }
 }
 
-const execute = withDeferredResponse(withRoleCheck(handleWarnsList, isMod), {
-  flags: [MessageFlags.Ephemeral],
-})
+const execute = withDeferredResponse(
+  withPrivilegeCheck(handleWarnsList, isMod),
+  {
+    flags: [MessageFlags.Ephemeral],
+  },
+)
 
 export default { data, execute }
