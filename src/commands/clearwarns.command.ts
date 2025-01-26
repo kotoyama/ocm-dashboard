@@ -1,7 +1,9 @@
 import {
-  CommandInteraction,
+  Message,
   GuildMember,
+  TextChannel,
   MessageFlags,
+  CommandInteraction,
   SlashCommandBuilder,
 } from 'discord.js'
 
@@ -15,27 +17,64 @@ const data = new SlashCommandBuilder()
 
 async function handleClearWarns(interaction: CommandInteraction) {
   try {
-    const { changes } = db.query('DELETE FROM warns;').run()
+    const channel = interaction.channel as TextChannel
 
-    if (!changes) {
-      return notify(interaction, {
-        type: 'error',
-        message: 'Варнов не найдено для обнуления.',
+    await interaction.editReply({
+      content:
+        'Ты собираешься обнулить все варны на сервере. Действительно продолжить? (y/n)',
+    })
+
+    const filter = (message: Message) =>
+      interaction.user.id === message.author.id
+
+    try {
+      const collected = await channel.awaitMessages({
+        filter,
+        max: 1,
+        time: 60_000,
+        errors: ['time'],
+      })
+      const response = collected.first()?.content?.toLowerCase()
+
+      if (response === 'y') {
+        const { changes } = db.query('DELETE FROM warns;').run()
+
+        if (!changes) {
+          return interaction.followUp({
+            content: '❌ Варнов не найдено для обнуления.',
+            flags: [MessageFlags.Ephemeral],
+          })
+        }
+
+        const initiator = interaction.member as GuildMember
+
+        await logAction(interaction.client, {
+          channel: 'modlog',
+          action: 'clear-warns',
+          moderator_id: initiator.user.id,
+        })
+
+        return interaction.followUp({
+          content: '✅ Варны были успешно обнулены.',
+          flags: [MessageFlags.Ephemeral],
+        })
+      } else if (response === 'n') {
+        return interaction.followUp({
+          content: '❌ Операция отменена из-за отказа пользователя.',
+          flags: [MessageFlags.Ephemeral],
+        })
+      } else {
+        return interaction.followUp({
+          content: '❌ Я тебя не понял.',
+          flags: [MessageFlags.Ephemeral],
+        })
+      }
+    } catch (error) {
+      return interaction.followUp({
+        content: '❌ Операция отменена по истечении времени.',
+        flags: [MessageFlags.Ephemeral],
       })
     }
-
-    const initiator = interaction.member as GuildMember
-
-    await logAction(interaction.client, {
-      channel: 'modlog',
-      action: 'clear-warns',
-      moderator_id: initiator.user.id,
-    })
-
-    return notify(interaction, {
-      type: 'success',
-      message: `Варны были успешно обнулены.`,
-    })
   } catch (error) {
     console.error(error)
 
