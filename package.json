@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "dotenv -e ./src/config/env/.env.development -- bun run --hot src/index.ts",
     "start": "dotenv -e ./src/config/env/.env.production -- bun run src/index.ts",
-    "deploy": "dotenv -e ./src/config/env/.env.production -- bun src/deploy-commands.ts"
+    "deploy": "dotenv -e ./src/config/env/.env.development -- bun src/deploy-commands.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -28,14 +28,15 @@ const data = new SlashCommandBuilder()
       .setName('remove_timeout')
       .setDescription(
         'Надо ли снять с пользователя текущий таймаут, если имеется',
-      ),
+      )
+      .setRequired(true),
   )
 
 async function handleClearWarn(interaction: CommandInteraction) {
   const warnId = interaction.options.get('warn_id', true).value as string
   const reason = interaction.options.get('reason', true).value as string
-  const removeTimeout =
-    (interaction.options.get('remove_timeout')?.value as boolean) || false
+  const removeTimeout = interaction.options.get('remove_timeout')
+    ?.value as boolean
 
   try {
     const [result] = db

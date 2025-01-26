@@ -9,7 +9,13 @@ import { nanoid } from 'nanoid'
 import { db } from '~/db'
 import config from '~/config/variables'
 import { isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
-import { logAction, notify, plural, withDeferredResponse } from '~/shared/lib'
+import {
+  logAction,
+  notify,
+  plural,
+  getTimeoutDuration,
+  withDeferredResponse,
+} from '~/shared/lib'
 import { Violation } from '~/shared/types'
 
 const data = new SlashCommandBuilder()
@@ -119,7 +125,7 @@ async function handleWarn(interaction: CommandInteraction) {
 
         return notify(interaction, {
           type: 'success',
-          message: `<@${guildMember?.user.id}> получил варн и был отправлен в таймаут на **${rule.label}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
+          message: `<@${guildMember?.user.id}> получил варн и был отправлен в таймаут на **${getTimeoutDuration(rule.timeout)}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
         })
       } else {
         return notify(interaction, {

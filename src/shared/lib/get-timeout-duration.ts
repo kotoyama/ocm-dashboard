@@ -1,10 +1,18 @@
 import { TimeUnit } from '../types'
 
-export function getTimeoutDuration(startDate: Date, endDate: Date): string {
-  const diffMs = endDate.getTime() - startDate.getTime()
+export function getTimeoutDuration(startDate: Date, endDate: Date): string
+export function getTimeoutDuration(duration: number): string
 
-  if (diffMs <= 0) {
-    throw new Error('Timeout has already ended')
+export function getTimeoutDuration(arg1: unknown, arg2?: unknown): string {
+  let diffMs: number
+
+  if (arg2) {
+    if (!(arg1 instanceof Date) || !(arg2 instanceof Date)) {
+      throw new Error('❌ Both arguments must be Date objects')
+    }
+    diffMs = arg2.getTime() - arg1.getTime()
+  } else {
+    diffMs = arg1 as number
   }
 
   const days = Math.floor((diffMs % TimeUnit.Week) / TimeUnit.Day)
