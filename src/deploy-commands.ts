@@ -7,6 +7,14 @@ const rest = new REST().setToken(env.DISCORD_TOKEN)
 
 async function deployCommands() {
   try {
+    console.log('Started deleting application (/) commands...')
+
+    await rest.put(Routes.applicationCommands(env.DISCORD_CLIENT_ID), {
+      body: [],
+    })
+
+    console.log('Successfully deleted all application commands.')
+
     const commands = await loadCommands()
     const commandsData = Array.from(commands.values()).map(
       (command) => command.data,
@@ -14,13 +22,9 @@ async function deployCommands() {
 
     console.log('Started refreshing application (/) commands...')
 
-    await rest.put(
-      Routes.applicationGuildCommands(
-        env.DISCORD_CLIENT_ID,
-        env.ALLOWED_SERVER_ID,
-      ),
-      { body: commandsData },
-    )
+    await rest.put(Routes.applicationCommands(env.DISCORD_CLIENT_ID), {
+      body: commandsData,
+    })
 
     console.log('Successfully reloaded application (/) commands.')
     process.exit()
