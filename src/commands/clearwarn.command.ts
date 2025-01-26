@@ -36,7 +36,7 @@ async function handleClearWarn(interaction: CommandInteraction) {
   const warnId = interaction.options.get('warn_id', true).value as string
   const reason = interaction.options.get('reason', true).value as string
   const removeTimeout = interaction.options.get('remove_timeout', true)
-    ?.value as boolean
+    .value as boolean
 
   try {
     const [result] = db
