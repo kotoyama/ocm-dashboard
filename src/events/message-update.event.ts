@@ -8,7 +8,9 @@ export default {
     if (
       !newMessage.author ||
       newMessage.author.bot ||
-      newMessage.author.system
+      newMessage.author.system ||
+      !newMessage.content ||
+      oldMessage.content === newMessage.content
     ) {
       return
     }
