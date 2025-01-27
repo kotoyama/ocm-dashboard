@@ -36,6 +36,10 @@ export function isBotAuthor(user?: GuildMember) {
   return user?.id === env.BOT_AUTHOR_ID
 }
 
+export function isAdmin(user?: GuildMember) {
+  return hasRoles({ user, roles: [env.ADMIN_ROLE_ID] })
+}
+
 export function isMod(user?: GuildMember) {
   return hasRoles({ user, roles: env.MODERATION_ROLES_IDS })
 }

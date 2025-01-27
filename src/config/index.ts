@@ -24,6 +24,7 @@ const envs = {
     .nonempty()
     .transform((value) => value.split(','))
     .pipe(z.string().trim().array()),
+  ADMIN_ROLE_ID: z.string().nonempty(),
   BOT_AUTHOR_ID: z.string().nonempty(),
 }
 

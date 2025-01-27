@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid'
 
 import { db } from '~/db'
 import config from '~/config/variables'
-import { isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
+import { isAdmin, isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
 import {
   logAction,
   notify,
@@ -63,7 +63,7 @@ async function handleWarn(interaction: CommandInteraction) {
       })
     }
 
-    if (!isPlayer(guildMember)) {
+    if (isAdmin(guildMember) || !isPlayer(guildMember)) {
       return notify(interaction, {
         type: 'error',
         message: 'Ты не можешь выдать варн этому пользователю.',
