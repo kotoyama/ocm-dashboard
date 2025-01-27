@@ -7,7 +7,7 @@ import {
 
 import { db } from '~/db'
 import config from '~/config/variables'
-import { isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
+import { isAdmin, isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
 import {
   notify,
   truncate,
@@ -33,7 +33,14 @@ async function handleWarnsList(interaction: CommandInteraction) {
   try {
     const guildMember = await interaction.guild?.members.fetch(userId)
 
-    if (!isPlayer(guildMember)) {
+    if (!guildMember) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Пользователь не найден.',
+      })
+    }
+
+    if (isAdmin(guildMember) || !isPlayer(guildMember)) {
       return notify(interaction, {
         type: 'error',
         message: 'У этого пользователя не может быть варнов.',
@@ -47,7 +54,7 @@ async function handleWarnsList(interaction: CommandInteraction) {
     if (!totalWarns) {
       return notify(interaction, {
         type: 'info',
-        message: `У <@${guildMember?.user.id}> нет варнов.`,
+        message: `У <@${guildMember.user.id}> нет варнов.`,
       })
     }
 
@@ -75,7 +82,7 @@ async function handleWarnsList(interaction: CommandInteraction) {
       embeds: [
         new EmbedBuilder()
           .setColor(config.colors.info)
-          .setTitle(`Список варнов **${guildMember?.user.username}**`)
+          .setTitle(`Список варнов **${guildMember.user.username}**`)
           .setDescription(
             [
               '```',

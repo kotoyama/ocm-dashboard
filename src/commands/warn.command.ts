@@ -53,8 +53,15 @@ async function handleWarn(interaction: CommandInteraction) {
     | null
 
   try {
-    const guildMember = await interaction.guild?.members.fetch(userId)
     const initiator = interaction.member as GuildMember
+    const guildMember = await interaction.guild?.members.fetch(userId)
+
+    if (!guildMember) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Пользователь не найден.',
+      })
+    }
 
     if (initiator.user.id === userId) {
       return notify(interaction, {
@@ -71,14 +78,14 @@ async function handleWarn(interaction: CommandInteraction) {
     }
 
     const isTimeouted =
-      !!guildMember?.communicationDisabledUntilTimestamp &&
+      !!guildMember.communicationDisabledUntilTimestamp &&
       guildMember.communicationDisabledUntilTimestamp !== null &&
       guildMember.communicationDisabledUntilTimestamp >= Date.now()
 
     if (isTimeouted) {
       return notify(interaction, {
         type: 'error',
-        message: `<@${guildMember?.user.id}> уже в таймауте.`,
+        message: `<@${guildMember.user.id}> уже в таймауте.`,
       })
     }
 
@@ -121,22 +128,22 @@ async function handleWarn(interaction: CommandInteraction) {
       const rule = rules.find((rule) => rule.warns === warnsCount)
 
       if (rule) {
-        guildMember?.timeout(rule.timeout)
+        guildMember.timeout(rule.timeout)
 
         return notify(interaction, {
           type: 'success',
-          message: `<@${guildMember?.user.id}> получил варн и был отправлен в таймаут на **${getTimeoutDuration(rule.timeout)}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
+          message: `<@${guildMember.user.id}> получил варн и был отправлен в таймаут на **${getTimeoutDuration(rule.timeout)}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
         })
       } else {
         return notify(interaction, {
           type: 'info',
-          message: `У <@${guildMember?.user.id}> уже **${plural(warnsCount, ['варн', 'варна', 'варнов'])}** за нарушение правила **"${config.violations[violation]}"**. Выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
+          message: `У <@${guildMember.user.id}> уже **${plural(warnsCount, ['варн', 'варна', 'варнов'])}** за нарушение правила **"${config.violations[violation]}"**. Выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
         })
       }
     } else {
       return notify(interaction, {
         type: 'info',
-        message: `Варн для <@${guildMember?.user.id}> успешно выдан, однако выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
+        message: `Варн для <@${guildMember.user.id}> успешно выдан, однако выбор наказания остаётся за тобой. При необходимости сделай что считаешь нужным вручную.`,
       })
     }
   } catch (error) {

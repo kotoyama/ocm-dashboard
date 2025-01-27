@@ -35,13 +35,20 @@ async function handleShowWarn(interaction: CommandInteraction) {
     const warn = result as Warn
     const guildMember = await interaction.guild?.members.fetch(warn.user_id)
 
+    if (!guildMember) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Пользователь не найден.',
+      })
+    }
+
     return interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setColor(config.colors.info)
-          .setTitle(guildMember?.user.username || null)
+          .setTitle(guildMember.user.username || null)
           .setDescription(warn.details)
-          .setThumbnail(guildMember?.user.avatarURL() || null)
+          .setThumbnail(guildMember.user.avatarURL() || null)
           .addFields(
             {
               name: 'ID',

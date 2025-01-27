@@ -54,6 +54,13 @@ async function handleClearWarn(interaction: CommandInteraction) {
     const initiator = interaction.member as GuildMember
     const guildMember = await interaction.guild?.members.fetch(warn.user_id)
 
+    if (!guildMember) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Пользователь не найден.',
+      })
+    }
+
     const { changes } = db
       .query('DELETE FROM warns WHERE id = $warn_id;')
       .run({ $warn_id: warnId })
@@ -66,7 +73,7 @@ async function handleClearWarn(interaction: CommandInteraction) {
     }
 
     if (removeTimeout) {
-      guildMember?.timeout(null)
+      guildMember.timeout(null)
     }
 
     await logAction(interaction.client, {

@@ -8,7 +8,7 @@ import {
 
 import { db } from '~/db'
 import config from '~/config/variables'
-import { isPlayer } from '~/middlewares'
+import { isAdmin, isPlayer } from '~/middlewares'
 import {
   formatDate,
   notify,
@@ -33,7 +33,14 @@ async function handleMyWarns(interaction: CommandInteraction) {
       initiator.user.id,
     )
 
-    if (!isPlayer(guildMember)) {
+    if (!guildMember) {
+      return notify(interaction, {
+        type: 'error',
+        message: 'Пользователь не найден.',
+      })
+    }
+
+    if (isAdmin(guildMember) || !isPlayer(guildMember)) {
       return notify(interaction, {
         type: 'error',
         message: 'У тебя не может быть варнов.',
