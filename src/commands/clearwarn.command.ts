@@ -87,13 +87,21 @@ async function handleClearWarn(interaction: CommandInteraction) {
     })
 
     if (removeTimeout) {
-      await guildMember.timeout(null).catch(() => {
-        return notify(interaction, {
-          type: 'info',
-          message:
-            'Варн снят, однако снять таймаут с пользователя не удалось. Возможно, не хватает каких-то прав. Попробуй сделать это вручную.',
+      return guildMember
+        .timeout(null)
+        .then(() => {
+          return notify(interaction, {
+            type: 'success',
+            message: `Варн **${warnId}** был успешно убран.`,
+          })
         })
-      })
+        .catch(() => {
+          return notify(interaction, {
+            type: 'info',
+            message:
+              'Варн снят, однако снять таймаут с пользователя не удалось. Возможно, не хватает каких-то прав. Попробуй сделать это вручную.',
+          })
+        })
     }
 
     return notify(interaction, {
