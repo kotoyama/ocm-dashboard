@@ -11,6 +11,7 @@ import { isAdmin, isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
 import {
   notify,
   truncate,
+  getMember,
   formatDate,
   withDeferredResponse,
 } from '~/shared/lib'
@@ -27,11 +28,11 @@ const data = new SlashCommandBuilder()
   )
 
 async function handleWarnsList(interaction: CommandInteraction) {
-  const userId = interaction.options.get('user_id', true).value as string
-  const page = (interaction.options.get('page')?.value as number) || 1
-
   try {
-    const guildMember = await interaction.guild?.members.fetch(userId)
+    const userId = interaction.options.get('user_id', true).value as string
+    const page = (interaction.options.get('page')?.value as number) || 1
+
+    const guildMember = await getMember(interaction, userId)
 
     if (!guildMember) {
       return notify(interaction, {

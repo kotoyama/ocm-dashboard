@@ -10,9 +10,10 @@ import { db } from '~/db'
 import config from '~/config/variables'
 import { isAdmin, isPlayer } from '~/middlewares'
 import {
-  formatDate,
   notify,
   truncate,
+  getMember,
+  formatDate,
   withDeferredResponse,
 } from '~/shared/lib'
 import type { Warn } from '~/shared/types'
@@ -25,13 +26,11 @@ const data = new SlashCommandBuilder()
   )
 
 async function handleMyWarns(interaction: CommandInteraction) {
-  const page = (interaction.options.get('page')?.value as number) || 1
-
   try {
+    const page = (interaction.options.get('page')?.value as number) || 1
+
     const initiator = interaction.member as GuildMember
-    const guildMember = await interaction.guild?.members.fetch(
-      initiator.user.id,
-    )
+    const guildMember = await getMember(interaction, initiator.user.id)
 
     if (!guildMember) {
       return notify(interaction, {

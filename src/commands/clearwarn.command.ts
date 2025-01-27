@@ -8,7 +8,12 @@ import {
 import { db } from '~/db'
 import type { Warn } from '~/shared/types'
 import { isMod, withPrivilegeCheck } from '~/middlewares'
-import { logAction, notify, withDeferredResponse } from '~/shared/lib'
+import {
+  notify,
+  logAction,
+  getMember,
+  withDeferredResponse,
+} from '~/shared/lib'
 
 const data = new SlashCommandBuilder()
   .setName('clearwarn')
@@ -33,12 +38,12 @@ const data = new SlashCommandBuilder()
   )
 
 async function handleClearWarn(interaction: CommandInteraction) {
-  const warnId = interaction.options.get('warn_id', true).value as string
-  const reason = interaction.options.get('reason', true).value as string
-  const removeTimeout = interaction.options.get('remove_timeout', true)
-    .value as boolean
-
   try {
+    const warnId = interaction.options.get('warn_id', true).value as string
+    const reason = interaction.options.get('reason', true).value as string
+    const removeTimeout = interaction.options.get('remove_timeout', true)
+      .value as boolean
+
     const [result] = db
       .query('SELECT * FROM warns WHERE id = $warn_id;')
       .all({ $warn_id: warnId })
@@ -52,7 +57,7 @@ async function handleClearWarn(interaction: CommandInteraction) {
 
     const warn = result as Warn
     const initiator = interaction.member as GuildMember
-    const guildMember = await interaction.guild?.members.fetch(warn.user_id)
+    const guildMember = await getMember(interaction, warn.user_id)
 
     if (!guildMember) {
       return notify(interaction, {
@@ -72,10 +77,6 @@ async function handleClearWarn(interaction: CommandInteraction) {
       })
     }
 
-    if (removeTimeout) {
-      guildMember.timeout(null)
-    }
-
     await logAction(interaction.client, {
       channel: 'modlog',
       action: 'clear-warn',
@@ -84,6 +85,16 @@ async function handleClearWarn(interaction: CommandInteraction) {
       warn_id: warnId,
       reason,
     })
+
+    if (removeTimeout) {
+      await guildMember.timeout(null).catch(() => {
+        return notify(interaction, {
+          type: 'info',
+          message:
+            'Варн снят, однако снять таймаут с пользователя не удалось. Возможно, не хватает каких-то прав. Попробуй сделать это вручную.',
+        })
+      })
+    }
 
     return notify(interaction, {
       type: 'success',

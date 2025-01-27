@@ -7,7 +7,12 @@ import {
 
 import { db } from '~/db'
 import config from '~/config/variables'
-import { formatDate, notify, withDeferredResponse } from '~/shared/lib'
+import {
+  notify,
+  getMember,
+  formatDate,
+  withDeferredResponse,
+} from '~/shared/lib'
 import type { Warn } from '~/shared/types'
 
 const data = new SlashCommandBuilder()
@@ -18,9 +23,9 @@ const data = new SlashCommandBuilder()
   )
 
 async function handleShowWarn(interaction: CommandInteraction) {
-  const warnId = interaction.options.get('warn_id', true).value as string
-
   try {
+    const warnId = interaction.options.get('warn_id', true).value as string
+
     const [result] = db
       .query('SELECT * FROM warns WHERE id = $warn_id;')
       .all({ $warn_id: warnId })
@@ -33,7 +38,7 @@ async function handleShowWarn(interaction: CommandInteraction) {
     }
 
     const warn = result as Warn
-    const guildMember = await interaction.guild?.members.fetch(warn.user_id)
+    const guildMember = await getMember(interaction, warn.user_id)
 
     if (!guildMember) {
       return notify(interaction, {

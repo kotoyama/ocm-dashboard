@@ -10,9 +10,10 @@ import { db } from '~/db'
 import config from '~/config/variables'
 import { isAdmin, isMod, isPlayer, withPrivilegeCheck } from '~/middlewares'
 import {
-  logAction,
   notify,
   plural,
+  logAction,
+  getMember,
   getTimeoutDuration,
   withDeferredResponse,
 } from '~/shared/lib'
@@ -44,17 +45,17 @@ const data = new SlashCommandBuilder()
   )
 
 async function handleWarn(interaction: CommandInteraction) {
-  const userId = interaction.options.get('user_id', true).value as string
-  const violation = interaction.options.get('violation', true)
-    .value as Violation
-  const details = interaction.options.get('details')?.value as
-    | string
-    | undefined
-    | null
-
   try {
+    const userId = interaction.options.get('user_id', true).value as string
+    const violation = interaction.options.get('violation', true)
+      .value as Violation
+    const details = interaction.options.get('details')?.value as
+      | string
+      | undefined
+      | null
+
     const initiator = interaction.member as GuildMember
-    const guildMember = await interaction.guild?.members.fetch(userId)
+    const guildMember = await getMember(interaction, userId)
 
     if (!guildMember) {
       return notify(interaction, {
@@ -89,9 +90,9 @@ async function handleWarn(interaction: CommandInteraction) {
       })
     }
 
-    db.run('BEGIN TRANSACTION;')
-
     const warnId = nanoid(10)
+
+    db.run('BEGIN TRANSACTION;')
 
     db.query(
       'INSERT INTO warns (id, user_id, reason, details) VALUES ($id, $user_id, $reason, $details);',
@@ -128,12 +129,20 @@ async function handleWarn(interaction: CommandInteraction) {
       const rule = rules.find((rule) => rule.warns === warnsCount)
 
       if (rule) {
-        guildMember.timeout(rule.timeout)
-
-        return notify(interaction, {
-          type: 'success',
-          message: `<@${guildMember.user.id}> получил варн и был отправлен в таймаут на **${getTimeoutDuration(rule.timeout)}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
-        })
+        await guildMember
+          .timeout(rule.timeout)
+          .then(() => {
+            return notify(interaction, {
+              type: 'success',
+              message: `<@${guildMember.user.id}> получил варн и был отправлен в таймаут на **${getTimeoutDuration(rule.timeout)}** за ${warnsCount}-е нарушение правила **"${config.violations[violation]}"**.`,
+            })
+          })
+          .catch(() => {
+            return notify(interaction, {
+              type: 'info',
+              message: `Варн для <@${guildMember.user.id}> успешно выдан, однако дать таймаут на **${getTimeoutDuration(rule.timeout)}** не удалось. Возможно, не хватает каких-то прав. Попробуй сделать это вручную.`,
+            })
+          })
       } else {
         return notify(interaction, {
           type: 'info',
@@ -149,7 +158,9 @@ async function handleWarn(interaction: CommandInteraction) {
   } catch (error) {
     console.error(error)
 
-    db.run('ROLLBACK;')
+    if (db.inTransaction) {
+      db.run('ROLLBACK;')
+    }
 
     return notify(interaction, {
       type: 'error',
