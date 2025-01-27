@@ -14,10 +14,10 @@ $ bun install
 
 ```bash
 # development
-$ bun dev
+$ bun start:dev
 
 # production mode
-$ bun start
+$ bun start:prod
 ```
 
 ## Bot configuration
