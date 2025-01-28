@@ -143,18 +143,20 @@ export async function logAction(client: Client, logEntry: LogEntry) {
     case 'message-update':
       description = `Сообщение <@${logEntry.author_id}> было отредактировано в ${channelLink(logEntry.channelId)}`
 
-      fields.push(
-        {
-          name: 'Контент до',
-          value: logEntry.beforeContent,
-          inline: false,
-        },
-        {
-          name: 'Контент после',
-          value: logEntry.afterContent,
-          inline: false,
-        },
-      )
+      if (logEntry.beforeContent && logEntry.afterContent) {
+        fields.push(
+          {
+            name: 'Контент до',
+            value: logEntry.beforeContent,
+            inline: false,
+          },
+          {
+            name: 'Контент после',
+            value: logEntry.afterContent,
+            inline: false,
+          },
+        )
+      }
 
       break
     case 'message-remove':
